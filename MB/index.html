@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>角色扮演生存游戏</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <div id="joystickContainer" class="joystick-container hidden">
+            <div id="joystickKnob" class="joystick-knob"></div>
+        </div>
+        <div id="ui">
+            <div id="coinCounter" class="coin-counter">
+                <span>💰</span>
+                <span id="coinCount">0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 按照依赖顺序加载脚本 -->
+    <script src="config.js"></script>
+    <script src="entities.js"></script>
+    <script src="systems.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
