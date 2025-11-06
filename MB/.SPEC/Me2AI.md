@@ -67,7 +67,7 @@
 ## 目标平台
 现代浏览器（Chrome、Firefox、Edge、Safari）
 
-请根据本文档生成AI2AI.md  描述项目架构以及规划开发任务生成
+请根据本文档生成AI2AI.md  描述项目架构
 
 
 ## 开发顺序
