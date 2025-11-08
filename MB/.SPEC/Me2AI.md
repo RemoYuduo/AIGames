@@ -73,7 +73,8 @@
 - HTML5 Canvas 渲染
 - JavaScript 游戏逻辑
 - CSS3 界面样式
-- 纯前端实现，不需要服务端，打开index.html 即可运行，避免使用 ES6 模块
+- 纯前端实现，避免使用 ES6 模块
+- 本地开发使用 Python 内置服务器（`python -m http.server 8000`）
 
 ## 目标平台
 现代浏览器（Chrome、Firefox、Edge、Safari）
