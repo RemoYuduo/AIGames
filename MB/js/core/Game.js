@@ -74,6 +74,11 @@ class Game {
     const swordConfig = this.config.get('weapon.sword');
     const sword = new Sword(swordConfig, this.player);
     this.player.equipWeapon(sword);
+    
+    // 给玩家装备弓
+    const bowConfig = this.config.get('weapon.bow');
+    const bow = new Bow(bowConfig, this.player);
+    this.player.equipWeapon(bow);
 
     // 摄像机跟随玩家
     this.camera.follow(this.player);
@@ -214,5 +219,10 @@ class Game {
   stop() {
     this.running = false;
     console.log('游戏停止');
+  }
+  
+  // 添加实体（用于动态生成，如箭矢）
+  addEntity(entity) {
+    this.entities.push(entity);
   }
 }

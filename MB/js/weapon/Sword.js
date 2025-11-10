@@ -33,6 +33,13 @@ class Sword extends Weapon {
     this.trailPositions = [];
     this.maxTrailLength = 8;
   }
+  
+  // 检查目标是否在攻击范围内
+  isInRange(target) {
+    if (!target || !target.transform) return false;
+    const distance = this.owner.transform.position.distance(target.transform.position);
+    return distance <= this.attackRange;
+  }
 
   // 触发攻击
   attack(targetDirection) {

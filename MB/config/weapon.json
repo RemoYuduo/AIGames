@@ -13,7 +13,9 @@
     "cooldown": 2.0,
     "arrowSpeed": 15,
     "range": 20,
-    "maxTargets": 1
+    "knockback": 1,
+    "maxTargets": 1,
+    "imagePath": "res/bow.png"
   },
   "lance": {
     "damage": 150,

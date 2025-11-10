@@ -55,28 +55,36 @@ class Player extends Entity {
   autoAttack() {
     if (!window.game || !window.game.entities) return;
     
-    // 查找最近的敌人
+    // 检查是否有武器正在攻击
+    const anyWeaponAttacking = this.weapons.some(w => w.attacking);
+    
+    // 只有在没有武器攻击时，才允许新的攻击
+    if (anyWeaponAttacking) return;
+    
+    // 查找最近的敌人（使用较大的范围来涵盖所有武器）
     let nearestEnemy = null;
     let nearestDistance = Infinity;
-    const autoAttackRange = 5; // 自动攻击触发范围（米）
+    const maxAttackRange = 25; // 最大检测范围（涵盖弓的射程）
     
     for (const entity of window.game.entities) {
       if (entity.team === 'enemy' && entity.alive && entity.active) {
         const distance = this.transform.position.distance(entity.transform.position);
-        if (distance < autoAttackRange && distance < nearestDistance) {
+        if (distance < maxAttackRange && distance < nearestDistance) {
           nearestDistance = distance;
           nearestEnemy = entity;
         }
       }
     }
     
-    // 如果有敌人在范围内，尝试攻击
+    // 如果有敌人在范围内，让每个武器根据自己的范围判断是否攻击
     if (nearestEnemy) {
       const direction = nearestEnemy.transform.position.x > this.transform.position.x ? 1 : -1;
       
       for (const weapon of this.weapons) {
-        if (weapon.canAttack()) {
+        // 让武器自己判断距离是否在攻击范围内
+        if (weapon.canAttack() && weapon.isInRange && weapon.isInRange(nearestEnemy)) {
           weapon.attack(direction);
+          break; // 只触发一个武器的攻击
         }
       }
     }
