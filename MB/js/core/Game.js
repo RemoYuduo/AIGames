@@ -8,6 +8,8 @@ class Game {
     this.map = null;
     this.input = null;
     this.player = null;
+    this.collisionSystem = null;
+    this.entities = []; // 所有实体列表
     
     this.running = false;
     this.paused = false;
@@ -53,16 +55,46 @@ class Game {
     // 创建输入管理器
     this.input = new Input(this.canvas);
 
+    // 创建碰撞系统
+    this.collisionSystem = new CollisionSystem();
+
     // 创建玩家（在地图中央）
     const playerConfig = this.config.get('character.player');
     const mountConfig = this.config.get('mount.defaultHorse');
     this.player = new Player(worldWidth / 2, worldHeight / 2, playerConfig, mountConfig);
+    this.entities.push(this.player);
+    this.collisionSystem.addEntity(this.player);
 
     // 摄像机跟随玩家
     this.camera.follow(this.player);
 
+    // 创建测试敌人（固定位置，无AI）
+    this.createTestEnemies();
+
     this.initialized = true;
     console.log('游戏初始化完成');
+  }
+
+  // 创建测试敌人
+  createTestEnemies() {
+    const infantryConfig = this.config.get('character.infantry');
+    
+    // 在玩家周围创建几个敌人
+    const positions = [
+      { x: 75 - 10, y: 15 - 5 },
+      { x: 75 + 10, y: 15 + 5 },
+      { x: 75 - 8, y: 15 + 8 },
+      { x: 75 + 12, y: 15 - 3 },
+      { x: 75, y: 15 + 10 }
+    ];
+
+    positions.forEach(pos => {
+      const enemy = new Enemy(pos.x, pos.y, infantryConfig, 'enemy');
+      this.entities.push(enemy);
+      this.collisionSystem.addEntity(enemy);
+    });
+
+    console.log(`创建了 ${positions.length} 个测试敌人`);
   }
 
   // 启动游戏循环
@@ -109,10 +141,18 @@ class Game {
     
     // 玩家移动
     this.player.move(direction);
-    this.player.update(deltaTime);
+    
+    // 更新所有实体
+    this.entities.forEach(entity => {
+      if (entity.active) {
+        entity.update(deltaTime);
+        // 限制实体在地图范围内
+        this.map.clampPosition(entity.transform.position);
+      }
+    });
 
-    // 限制玩家在地图范围内
-    this.map.clampPosition(this.player.transform.position);
+    // 更新碰撞系统
+    this.collisionSystem.update(deltaTime);
 
     // 更新摄像机
     this.camera.update(deltaTime);
@@ -126,8 +166,12 @@ class Game {
     // 渲染地图
     this.map.render(this.context, this.camera);
 
-    // 渲染玩家
-    this.player.render(this.context, this.camera);
+    // 渲染所有实体
+    this.entities.forEach(entity => {
+      if (entity.active) {
+        entity.render(this.context, this.camera);
+      }
+    });
 
     // 渲染UI（摇杆）
     this.input.render(this.context);
