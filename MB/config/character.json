@@ -1,7 +1,7 @@
 {
   "player": {
     "size": 2.0,
-    "maxSpeed": 24,
+    "maxSpeed": 8.64,
     "acceleration": 60,
     "mass": 80,
     "health": 100

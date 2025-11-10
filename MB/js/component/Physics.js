@@ -7,7 +7,7 @@ class Physics {
     this.maxSpeed = config.maxSpeed || 5;
     this.accelerationForce = config.acceleration || 10;
     this.mass = config.mass || 1;
-    this.friction = 0.9; // 摩擦系数
+    this.friction = 0.95; // 摩擦系数 (原0.9，每帧衰减10%；现0.95，每帧衰减5%)
   }
 
   // 施加加速度（基于输入方向）
@@ -33,11 +33,16 @@ class Physics {
 
   // 更新物理状态
   update(deltaTime) {
+    // 判断是否有加速度输入
+    const hasInput = this.acceleration.length() > 0.01;
+    
     // 更新速度
     this.velocity.add(Vector2.multiply(this.acceleration, deltaTime));
 
-    // 应用摩擦
-    this.velocity.multiply(this.friction);
+    // 只在没有输入时应用摩擦
+    if (!hasInput) {
+      this.velocity.multiply(this.friction);
+    }
 
     // 限制最大速度
     this.velocity.limit(this.maxSpeed);
