@@ -41,6 +41,45 @@ class Player extends Entity {
       this.mount = this.addComponent('mount', new Mount(mountConfig, this));
       this.mount.mount(); // 初始骑马
     }
+    
+    // 武器列表
+    this.weapons = [];
+  }
+  
+  // 装备武器
+  equipWeapon(weapon) {
+    this.weapons.push(weapon);
+  }
+  
+  // 自动攻击（检测范围内的敌人）
+  autoAttack() {
+    if (!window.game || !window.game.entities) return;
+    
+    // 查找最近的敌人
+    let nearestEnemy = null;
+    let nearestDistance = Infinity;
+    const autoAttackRange = 5; // 自动攻击触发范围（米）
+    
+    for (const entity of window.game.entities) {
+      if (entity.team === 'enemy' && entity.alive && entity.active) {
+        const distance = this.transform.position.distance(entity.transform.position);
+        if (distance < autoAttackRange && distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestEnemy = entity;
+        }
+      }
+    }
+    
+    // 如果有敌人在范围内，尝试攻击
+    if (nearestEnemy) {
+      const direction = nearestEnemy.transform.position.x > this.transform.position.x ? 1 : -1;
+      
+      for (const weapon of this.weapons) {
+        if (weapon.canAttack()) {
+          weapon.attack(direction);
+        }
+      }
+    }
   }
 
   // 移动
@@ -81,6 +120,14 @@ class Player extends Entity {
     if (this.mount) {
       this.mount.update(deltaTime);
     }
+    
+    // 更新武器
+    for (const weapon of this.weapons) {
+      weapon.update(deltaTime);
+    }
+    
+    // 自动攻击
+    this.autoAttack();
   }
 
   // 渲染
@@ -181,6 +228,11 @@ class Player extends Entity {
     // 渲染马（在角色之后，覆盖在人上）
     if (this.mount) {
       this.mount.render(context, camera);
+    }
+
+    // 最后渲染武器（显示在最上层）
+    for (const weapon of this.weapons) {
+      weapon.render(context, camera);
     }
 
     // 调试：绘制碰撞圆

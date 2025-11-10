@@ -4,7 +4,9 @@
     "knockback": 2,
     "cooldown": 2.0,
     "attackDuration": 0.5,
-    "maxTargets": 3
+    "maxTargets": 3,
+    "attackRange": 2.5,
+    "imagePath": "res/sword.png"
   },
   "bow": {
     "damage": 30,

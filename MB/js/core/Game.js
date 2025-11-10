@@ -9,6 +9,7 @@ class Game {
     this.input = null;
     this.player = null;
     this.collisionSystem = null;
+    this.combatSystem = null;
     this.entities = []; // 所有实体列表
     
     this.running = false;
@@ -57,6 +58,9 @@ class Game {
 
     // 创建碰撞系统
     this.collisionSystem = new CollisionSystem();
+    
+    // 创建战斗系统
+    this.combatSystem = new CombatSystem();
 
     // 创建玩家（在地图中央）
     const playerConfig = this.config.get('character.player');
@@ -64,12 +68,21 @@ class Game {
     this.player = new Player(worldWidth / 2, worldHeight / 2, playerConfig, mountConfig);
     this.entities.push(this.player);
     this.collisionSystem.addEntity(this.player);
+    this.combatSystem.addEntity(this.player);
+    
+    // 给玩家装备剑
+    const swordConfig = this.config.get('weapon.sword');
+    const sword = new Sword(swordConfig, this.player);
+    this.player.equipWeapon(sword);
 
     // 摄像机跟随玩家
     this.camera.follow(this.player);
 
     // 创建测试敌人（固定位置，无AI）
     this.createTestEnemies();
+    
+    // 将game实例设为全局，方便武器系统访问
+    window.game = this;
 
     this.initialized = true;
     console.log('游戏初始化完成');
@@ -92,6 +105,7 @@ class Game {
       const enemy = new Enemy(pos.x, pos.y, infantryConfig, 'enemy');
       this.entities.push(enemy);
       this.collisionSystem.addEntity(enemy);
+      this.combatSystem.addEntity(enemy);
     });
 
     console.log(`创建了 ${positions.length} 个测试敌人`);
@@ -153,6 +167,9 @@ class Game {
 
     // 更新碰撞系统
     this.collisionSystem.update(deltaTime);
+    
+    // 更新战斗系统
+    this.combatSystem.update(deltaTime);
 
     // 更新摄像机
     this.camera.update(deltaTime);
@@ -172,6 +189,9 @@ class Game {
         entity.render(this.context, this.camera);
       }
     });
+    
+    // 渲染战斗系统调试信息
+    this.combatSystem.renderDebug(this.context, this.camera);
 
     // 渲染UI（摇杆）
     this.input.render(this.context);
