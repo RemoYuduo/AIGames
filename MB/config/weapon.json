@@ -1,0 +1,23 @@
+{
+  "sword": {
+    "damage": 50,
+    "knockback": 2,
+    "cooldown": 2.0,
+    "attackDuration": 0.5,
+    "maxTargets": 3
+  },
+  "bow": {
+    "damage": 30,
+    "cooldown": 2.0,
+    "arrowSpeed": 15,
+    "range": 20,
+    "maxTargets": 1
+  },
+  "lance": {
+    "damage": 150,
+    "knockback": 5,
+    "cooldown": 1.0,
+    "speedThreshold": 0.7,
+    "maxTargets": 5
+  }
+}

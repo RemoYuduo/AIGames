@@ -1,0 +1,191 @@
+// 玩家角色
+class Player extends Entity {
+  constructor(x, y, config, mountConfig) {
+    super(x, y);
+    this.type = 'player';
+    this.config = config;
+    
+    // 添加物理组件
+    this.physics = this.addComponent('physics', new Physics({
+      maxSpeed: config.maxSpeed,
+      acceleration: config.acceleration,
+      mass: config.mass
+    }));
+
+    // 角色尺寸（半径）
+    this.radius = config.size / 2;
+    
+    // 渲染颜色
+    this.bodyColor = '#4a90e2';
+    this.headColor = '#6fa8dc';
+
+    // 面向方向（1为右，-1为左）
+    this.facingDirection = 1;
+    
+    // 移动状态
+    this.isMoving = false;
+    
+    // 动画参数
+    this.animationTime = 0;
+    this.bodyBobPhase = 0;
+    this.headBobPhase = 0.5;
+    this.leanAngle = 0; // 倾斜角度
+    
+    // 骑乘组件
+    this.mount = null;
+    if (mountConfig) {
+      this.mount = this.addComponent('mount', new Mount(mountConfig, this));
+      this.mount.mount(); // 初始骑马
+    }
+  }
+
+  // 移动
+  move(direction) {
+    if (direction.length() > 0) {
+      this.physics.applyAcceleration(direction);
+      this.isMoving = true;
+      
+      // 更新面向方向
+      if (Math.abs(direction.x) > 0.1) {
+        this.facingDirection = direction.x > 0 ? 1 : -1;
+      }
+    } else {
+      this.isMoving = false;
+    }
+  }
+
+  // 更新
+  update(deltaTime) {
+    // 更新物理
+    const velocity = this.physics.update(deltaTime);
+    this.transform.translate(velocity.x * deltaTime, velocity.y * deltaTime);
+
+    // 更新动画时间
+    if (this.isMoving) {
+      this.animationTime += deltaTime * 10; // 动画速度
+      
+      // 根据速度调整倾斜角度（向前倾）
+      const speedRatio = this.physics.getSpeedRatio();
+      const targetLean = speedRatio * 0.15 * this.facingDirection;
+      this.leanAngle = MathUtil.lerp(this.leanAngle, targetLean, deltaTime * 5);
+    } else {
+      this.animationTime = 0;
+      this.leanAngle = MathUtil.lerp(this.leanAngle, 0, deltaTime * 8);
+    }
+    
+    // 更新骑乘组件
+    if (this.mount) {
+      this.mount.update(deltaTime);
+    }
+  }
+
+  // 渲染
+  render(context, camera) {
+    const screenPos = camera.worldToScreen(this.transform.position);
+    const screenRadius = camera.worldToScreenDistance(this.radius);
+
+    // 计算动画偏移（类似忍者奔跑的跳跃效果）
+    let bodyBobOffset = 0;
+    let headBobOffset = 0;
+    let bodySquash = 1.0;
+    let bodyStretch = 1.0;
+    
+    if (this.isMoving) {
+      // 身体和头部有不同的摆动相位，制造奔跑感
+      bodyBobOffset = Math.sin(this.animationTime + this.bodyBobPhase) * screenRadius * 0.15;
+      headBobOffset = Math.sin(this.animationTime + this.headBobPhase) * screenRadius * 0.25;
+      
+      // 挤压和拉伸效果
+      const bouncePhase = Math.abs(Math.sin(this.animationTime));
+      bodySquash = 1.0 + bouncePhase * 0.1; // 水平挤压
+      bodyStretch = 1.0 - bouncePhase * 0.1; // 垂直拉伸
+    }
+
+    context.save();
+    context.translate(screenPos.x, screenPos.y);
+    
+    // 应用倾斜角度
+    if (this.leanAngle !== 0) {
+      context.rotate(this.leanAngle);
+    }
+
+    // 绘制身体（椭圆形，表现挤压拉伸）
+    context.fillStyle = this.bodyColor;
+    context.beginPath();
+    context.ellipse(
+      0, 
+      bodyBobOffset, 
+      screenRadius * 0.7 * bodySquash,
+      screenRadius * 0.7 * bodyStretch,
+      0,
+      0, 
+      Math.PI * 2
+    );
+    context.fill();
+
+    // 身体轮廓
+    context.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+    context.lineWidth = 2;
+    context.stroke();
+
+    // 绘制头部（在身体上方，前后晃动）
+    const headX = this.facingDirection * screenRadius * 0.15;
+    const headY = -screenRadius * 0.6 + headBobOffset;
+    
+    context.fillStyle = this.headColor;
+    context.beginPath();
+    context.arc(
+      headX, 
+      headY, 
+      screenRadius * 0.45, 
+      0, 
+      Math.PI * 2
+    );
+    context.fill();
+
+    // 头部轮廓
+    context.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+    context.lineWidth = 2;
+    context.stroke();
+
+    // 绘制眼睛（面向方向）
+    context.fillStyle = '#ffffff';
+    context.beginPath();
+    context.arc(
+      headX + this.facingDirection * screenRadius * 0.15, 
+      headY - screenRadius * 0.05, 
+      screenRadius * 0.08, 
+      0, 
+      Math.PI * 2
+    );
+    context.fill();
+    
+    // 眼珠
+    context.fillStyle = '#000000';
+    context.beginPath();
+    context.arc(
+      headX + this.facingDirection * screenRadius * 0.18, 
+      headY - screenRadius * 0.05, 
+      screenRadius * 0.04, 
+      0, 
+      Math.PI * 2
+    );
+    context.fill();
+
+    context.restore();
+
+    // 渲染马（在角色之后，覆盖在人上）
+    if (this.mount) {
+      this.mount.render(context, camera);
+    }
+
+    // 调试：绘制碰撞圆
+    if (window.DEBUG) {
+      context.strokeStyle = '#00ff00';
+      context.lineWidth = 1;
+      context.beginPath();
+      context.arc(screenPos.x, screenPos.y, screenRadius, 0, Math.PI * 2);
+      context.stroke();
+    }
+  }
+}

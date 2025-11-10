@@ -1,0 +1,14 @@
+{
+  "defaultHorse": {
+    "maxSpeed": 36,
+    "acceleration": 45,
+    "friction": 0.88,
+    "imagePath": "res/horseHead.png",
+    "offsetX": 0.4,
+    "offsetY": 0.3,
+    "renderWidth": 1.2,
+    "renderHeight": 1.2,
+    "bobSpeed": 8,
+    "bobAmount": 0.15
+  }
+}
