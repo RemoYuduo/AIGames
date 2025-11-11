@@ -46,7 +46,7 @@ class Player extends Entity {
     this.weapons = [];
     
     // 生命值
-    this.health = config.health || 100;
+    this.health = config.health || 2000;
     this.maxHealth = this.health;
     this.alive = true;
     

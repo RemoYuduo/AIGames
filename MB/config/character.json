@@ -4,7 +4,7 @@
     "maxSpeed": 8.64,
     "acceleration": 60,
     "mass": 80,
-    "health": 3000
+    "health": 2000
   },
   "infantry": {
     "size": 1.5,
