@@ -38,6 +38,7 @@ class AI {
     const ownerPos = owner.transform.position;
     const enemyTeam = owner.team === 'player' ? 'enemy' : 'player';
     
+    // 1. 首先查找敌方实体
     for (const entity of entities) {
       if (entity.team === enemyTeam && entity.alive && entity.active) {
         const distance = ownerPos.distance(entity.transform.position);
@@ -47,6 +48,23 @@ class AI {
           nearestDistance = distance;
           nearestEnemy = entity;
         }
+      }
+    }
+    
+    // 2. 如果没有找到敌方实体，查找敌方建筑
+    if (!nearestEnemy && window.game && window.game.buildings) {
+      const enemyBuilding = window.game.buildings.find(b => b.type === enemyTeam && b.health > 0);
+      if (enemyBuilding) {
+        // 创建一个虚拟的建筑目标对象，让士兵可以攻击
+        nearestEnemy = {
+          team: enemyTeam,
+          alive: true,
+          active: true,
+          transform: { position: enemyBuilding.position },
+          isBuilding: true, // 标记这是建筑目标
+          building: enemyBuilding // 引用实际的建筑对象
+        };
+        console.log(`${owner.team}士兵没有找到敌人，向敌方建筑移动`);
       }
     }
     
@@ -105,15 +123,25 @@ class AI {
       this.state = 'ATTACK';
       owner.isMoving = false;
       
-      // 触发攻击
-      if (owner.weapons && owner.weapons.length > 0) {
-        const direction = targetPos.x > ownerPos.x ? 1 : -1;
-        owner.facingDirection = direction;
-        
-        for (const weapon of owner.weapons) {
-          if (weapon.canAttack()) {
-            weapon.attack(direction);
-            break;
+      // 如果是建筑目标，则对建筑造成伤害
+      if (this.target.isBuilding && this.target.building) {
+        // 每次攻击对建筑造成10点伤害
+        this.target.building.health = (this.target.building.health || 100) - 10;
+        console.log(`士兵攻击建筑，建筑剩余血量: ${this.target.building.health}`);
+        if (this.target.building.health <= 0) {
+          console.log(`${owner.team}摧毁了敌方建筑！`);
+        }
+      } else {
+        // 触发常规攻击
+        if (owner.weapons && owner.weapons.length > 0) {
+          const direction = targetPos.x > ownerPos.x ? 1 : -1;
+          owner.facingDirection = direction;
+          
+          for (const weapon of owner.weapons) {
+            if (weapon.canAttack()) {
+              weapon.attack(direction);
+              break;
+            }
           }
         }
       }
@@ -151,14 +179,24 @@ class AI {
       // 朝向目标
       owner.facingDirection = targetPos.x > ownerPos.x ? 1 : -1;
       
-      // 触发攻击
-      if (owner.weapons && owner.weapons.length > 0) {
-        const direction = targetPos.x > ownerPos.x ? 1 : -1;
-        
-        for (const weapon of owner.weapons) {
-          if (weapon.canAttack()) {
-            weapon.attack(direction);
-            break;
+      // 如果是建筑目标，则对建筑造成伤害
+      if (this.target.isBuilding && this.target.building) {
+        // 远程单位每次攻击对建筑造成15点伤害
+        this.target.building.health = (this.target.building.health || 100) - 15;
+        console.log(`弓兵攻击建筑，建筑剩余血量: ${this.target.building.health}`);
+        if (this.target.building.health <= 0) {
+          console.log(`${owner.team}摧毁了敌方建筑！`);
+        }
+      } else {
+        // 触发常规攻击
+        if (owner.weapons && owner.weapons.length > 0) {
+          const direction = targetPos.x > ownerPos.x ? 1 : -1;
+          
+          for (const weapon of owner.weapons) {
+            if (weapon.canAttack()) {
+              weapon.attack(direction);
+              break;
+            }
           }
         }
       }
@@ -213,6 +251,16 @@ class AI {
         
         // 检测冲锋完成：骑枪冲刺结束
         if (this.chargeStartPos && wasCharging && !isLanceCharging) {
+          // 如果目标是建筑，则对建筑造成伤害
+          if (this.target.isBuilding && this.target.building) {
+            // 骑兵冲锋对建筑造成30点伤害
+            this.target.building.health = (this.target.building.health || 100) - 30;
+            console.log(`骑兵冲锋攻击建筑，建筑剩余血量: ${this.target.building.health}`);
+            if (this.target.building.health <= 0) {
+              console.log(`${owner.team}摧毁了敌方建筑！`);
+            }
+          }
+          
           // 冲刺结束，立即切换到穿透阶段
           this.chargePhase = 'CONTINUE';
           this.continueTimer = 3.0; // 继续前进3秒，穿过敌阵（增加穿透时间）

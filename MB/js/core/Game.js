@@ -18,6 +18,7 @@ class Game {
     this.lastTime = 0;
     
     this.initialized = false;
+    this.buildings = []; // 建筑物列表
   }
 
   // 初始化游戏
@@ -65,11 +66,19 @@ class Game {
     
     // 创建AI系统
     this.aiSystem = new AISystem();
+    
+    // 将game实例设为全局，方便武器系统访问
+    window.game = this;
+    
+    // 创建建筑物
+    this.createBuildings();
 
-    // 创建玩家（在地图中央）
+    // 创建玩家（在己方建筑旁）
     const playerConfig = this.config.get('character.player');
     const mountConfig = this.config.get('mount.defaultHorse');
-    this.player = new Player(worldWidth / 2, worldHeight / 2, playerConfig, mountConfig);
+    const playerBuildingPos = this.config.get('map.playerBuilding');
+    // 在建筑物前方5米处生成玩家
+    this.player = new Player(playerBuildingPos.x + 5, playerBuildingPos.y, playerConfig, mountConfig);
     this.entities.push(this.player);
     this.collisionSystem.addEntity(this.player);
     this.combatSystem.addEntity(this.player);
@@ -91,12 +100,6 @@ class Game {
 
     // 摄像机跟随玩家
     this.camera.follow(this.player);
-
-    // 创建测试敌人（固定位置，无AI）
-    this.createTestEnemies();
-    
-    // 将game实例设为全局，方便武器系统访问
-    window.game = this;
 
     this.initialized = true;
     console.log('游戏初始化完成');
@@ -157,6 +160,42 @@ class Game {
     });
 
     console.log(`创建了 ${infantryPositions.length} 个步兵、${archerPositions.length} 个弓兵、${cavalryPositions.length} 个骑兵`);
+  }
+  
+  // 创建建筑物
+  createBuildings() {
+    const playerBuildingConfig = this.config.get('map.playerBuilding');
+    const enemyBuildingConfig = this.config.get('map.enemyBuilding');
+    
+    // 创建玩家建筑物
+    const playerBuilding = new Building(
+      playerBuildingConfig.x,
+      playerBuildingConfig.y,
+      'player',
+      playerBuildingConfig
+    );
+    
+    // 创建敌人建筑物，设置出兵间隔为玩家建筑的80%（快20%）
+    const enemyBuildingConfigWithFastSpawn = {
+      ...enemyBuildingConfig,
+      spawnInterval: (enemyBuildingConfig.spawnInterval || 10) * 0.8,  // 快20%
+      firstSpawnTime: 2.4  // 第一波兵2.4秒后刷新（比玩家的3秒快20%）
+    };
+    
+    const enemyBuilding = new Building(
+      enemyBuildingConfig.x,
+      enemyBuildingConfig.y,
+      'enemy',
+      enemyBuildingConfigWithFastSpawn
+    );
+    
+    // 修改玩家建筑的第一波兵时间
+    playerBuilding.firstSpawnTime = 3; // 玩家建筑第一波兵3秒后刷新
+    
+    this.buildings.push(playerBuilding);
+    this.buildings.push(enemyBuilding);
+    
+    console.log('创建了玩家和敌人建筑物（敌人出兵速度更快20%）');
   }
 
   // 启动游戏循环
@@ -221,6 +260,11 @@ class Game {
     
     // 更新战斗系统
     this.combatSystem.update(deltaTime);
+    
+    // 更新建筑物
+    this.buildings.forEach(building => {
+      building.update(deltaTime);
+    });
 
     // 更新摄像机
     this.camera.update(deltaTime);
@@ -233,6 +277,11 @@ class Game {
 
     // 渲染地图
     this.map.render(this.context, this.camera);
+    
+    // 渲染建筑物
+    this.buildings.forEach(building => {
+      building.render(this.context, this.camera);
+    });
 
     // 渲染所有实体
     this.entities.forEach(entity => {
