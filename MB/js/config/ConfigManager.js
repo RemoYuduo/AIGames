@@ -30,13 +30,15 @@ class ConfigManager {
   // 加载单个配置文件
   async loadConfig(name) {
     try {
-      const response = await fetch(`config/${name}.json`);
+      // 添加时间戳参数防止浏览器缓存
+      const timestamp = new Date().getTime();
+      const response = await fetch(`config/${name}.json?t=${timestamp}`);
       if (!response.ok) {
         throw new Error(`加载配置失败: ${name}`);
       }
       const data = await response.json();
       this.configs[name] = data;
-      console.log(`配置加载成功: ${name}`);
+      console.log(`配置加载成功: ${name}`, data);
       return data;
     } catch (error) {
       console.error(`配置加载错误 (${name}):`, error);

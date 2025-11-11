@@ -10,6 +10,7 @@ class Game {
     this.player = null;
     this.collisionSystem = null;
     this.combatSystem = null;
+    this.aiSystem = null;
     this.entities = []; // 所有实体列表
     
     this.running = false;
@@ -61,6 +62,9 @@ class Game {
     
     // 创建战斗系统
     this.combatSystem = new CombatSystem();
+    
+    // 创建AI系统
+    this.aiSystem = new AISystem();
 
     // 创建玩家（在地图中央）
     const playerConfig = this.config.get('character.player');
@@ -100,25 +104,59 @@ class Game {
 
   // 创建测试敌人
   createTestEnemies() {
+    // 获取配置
     const infantryConfig = this.config.get('character.infantry');
+    const archerConfig = this.config.get('character.archer');
+    const cavalryConfig = this.config.get('character.cavalry');
+    const swordConfig = this.config.get('weapon.sword');
+    const bowConfig = this.config.get('weapon.bow');
+    const lanceConfig = this.config.get('weapon.lance');
+    const mountConfig = this.config.get('mount.defaultHorse');
     
-    // 在玩家周围创建几个敌人
-    const positions = [
-      { x: 75 - 10, y: 15 - 5 },
-      { x: 75 + 10, y: 15 + 5 },
-      { x: 75 - 8, y: 15 + 8 },
-      { x: 75 + 12, y: 15 - 3 },
-      { x: 75, y: 15 + 10 }
+    // 创建步兵（近战）
+    const infantryPositions = [
+      { x: 75 + 15, y: 15 },
+      { x: 75 + 18, y: 15 - 3 },
+      { x: 75 + 20, y: 15 + 3 }
     ];
-
-    positions.forEach(pos => {
-      const enemy = new Enemy(pos.x, pos.y, infantryConfig, 'enemy');
-      this.entities.push(enemy);
-      this.collisionSystem.addEntity(enemy);
-      this.combatSystem.addEntity(enemy);
+    
+    infantryPositions.forEach(pos => {
+      const infantry = new Infantry(pos.x, pos.y, 'enemy', infantryConfig, swordConfig);
+      this.entities.push(infantry);
+      this.collisionSystem.addEntity(infantry);
+      this.combatSystem.addEntity(infantry);
+      this.aiSystem.addEntity(infantry);
+    });
+    
+    // 创建弓兵（远程）
+    const archerPositions = [
+      { x: 75 + 25, y: 15 - 5 },
+      { x: 75 + 28, y: 15 + 5 }
+    ];
+    
+    archerPositions.forEach(pos => {
+      const archer = new Archer(pos.x, pos.y, 'enemy', archerConfig, bowConfig);
+      this.entities.push(archer);
+      this.collisionSystem.addEntity(archer);
+      this.combatSystem.addEntity(archer);
+      this.aiSystem.addEntity(archer);
+    });
+    
+    // 创建骑兵（冲锋）
+    const cavalryPositions = [
+      { x: 75 + 30, y: 15 },
+      { x: 75 + 35, y: 15 + 3 }
+    ];
+    
+    cavalryPositions.forEach(pos => {
+      const cavalry = new Cavalry(pos.x, pos.y, 'enemy', cavalryConfig, mountConfig, lanceConfig);
+      this.entities.push(cavalry);
+      this.collisionSystem.addEntity(cavalry);
+      this.combatSystem.addEntity(cavalry);
+      this.aiSystem.addEntity(cavalry);
     });
 
-    console.log(`创建了 ${positions.length} 个测试敌人`);
+    console.log(`创建了 ${infantryPositions.length} 个步兵、${archerPositions.length} 个弓兵、${cavalryPositions.length} 个骑兵`);
   }
 
   // 启动游戏循环
@@ -175,6 +213,9 @@ class Game {
       }
     });
 
+    // 更新AI系统
+    this.aiSystem.update(this.entities, deltaTime);
+    
     // 更新碰撞系统
     this.collisionSystem.update(deltaTime);
     
@@ -205,6 +246,46 @@ class Game {
 
     // 渲染UI（摇杆）
     this.input.render(this.context);
+    
+    // 渲染玩家HP（左上角）
+    this.renderPlayerHP();
+  }
+  
+  // 渲染玩家HP条
+  renderPlayerHP() {
+    if (!this.player || !this.player.alive) return;
+    
+    const ctx = this.context;
+    const padding = 20;
+    const barWidth = 200;
+    const barHeight = 25;
+    const x = padding;
+    const y = padding;
+    
+    // 计算生命值比例
+    const healthRatio = this.player.health / this.player.maxHealth;
+    
+    // 绘制背景
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(x, y, barWidth, barHeight);
+    
+    // 绘制生命值条
+    const hpColor = healthRatio > 0.6 ? '#2ecc71' : (healthRatio > 0.3 ? '#f39c12' : '#e74c3c');
+    ctx.fillStyle = hpColor;
+    ctx.fillRect(x + 2, y + 2, (barWidth - 4) * healthRatio, barHeight - 4);
+    
+    // 绘制边框
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, barWidth, barHeight);
+    
+    // 绘制HP文字
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 14px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const hpText = `HP: ${Math.ceil(this.player.health)} / ${this.player.maxHealth}`;
+    ctx.fillText(hpText, x + barWidth / 2, y + barHeight / 2);
   }
 
   // 暂停游戏
