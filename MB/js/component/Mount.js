@@ -107,9 +107,11 @@ class Mount {
     const horseWorldPos = new Vector2(horseX, horseY + bobOffset);
     const screenPos = camera.worldToScreen(horseWorldPos);
     
-    // 计算渲染尺寸（基于世界单位转屏幕像素）
-    const screenWidth = camera.worldToScreenDistance(this.renderWidth);
-    const screenHeight = camera.worldToScreenDistance(this.renderHeight);
+    // 计算渲染尺寸（基于世界单位转屏幕像素，并根据角色尺寸比例缩放）
+    // 玩家尺寸2.0米为基准，其他角色按比例缩放
+    const sizeRatio = this.owner.radius / 1.0; // 1.0是玩家半径的一半
+    const screenWidth = camera.worldToScreenDistance(this.renderWidth * sizeRatio);
+    const screenHeight = camera.worldToScreenDistance(this.renderHeight * sizeRatio);
     
     context.save();
     context.translate(screenPos.x, screenPos.y);

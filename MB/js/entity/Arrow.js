@@ -21,9 +21,11 @@ class Arrow extends Entity {
     // 命中目标集合（每个箭矢只能命中一个目标）
     this.hasHit = false;
     
-    // 箭矢尺寸
-    this.length = 0.8; // 米
-    this.width = 0.15; // 米
+  // 箭矢尺寸（根据角色尺寸比例缩放）
+  // 玩家尺寸2.0米为基准，其他角色按比例缩放
+  const sizeRatio = owner.radius / 1.0; // 1.0是玩家半径的一半
+  this.length = 0.8 * sizeRatio; // 米
+  this.width = 0.15 * sizeRatio; // 米
     
     // 加载图片
     this.image = null;

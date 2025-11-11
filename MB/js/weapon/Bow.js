@@ -183,9 +183,11 @@ class Bow extends Weapon {
     
     const screenPos = camera.worldToScreen(worldPos);
     
-    // 计算渲染尺寸
-    const baseWidth = 1.0;
-    const baseHeight = 1.0;
+    // 计算渲染尺寸（根据角色尺寸比例缩放）
+    // 玩家尺寸2.0米为基准，其他角色按比例缩放
+    const sizeRatio = this.owner.radius / 1.0; // 1.0是玩家半径的一半
+    const baseWidth = 1.0 * sizeRatio;
+    const baseHeight = 1.0 * sizeRatio;
     const screenWidth = camera.worldToScreenDistance(baseWidth * this.baseScale);
     const screenHeight = camera.worldToScreenDistance(baseHeight * this.baseScale);
     

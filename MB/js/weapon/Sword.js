@@ -217,9 +217,11 @@ class Sword extends Weapon {
     const screenPos = camera.worldToScreen(worldPos);
     const facing = this.owner.facingDirection;
     
-    // 计算渲染尺寸（基于世界单位）
-    const baseWidth = 1.2; // 米
-    const baseHeight = 1.2; // 米
+    // 计算渲染尺寸（基于世界单位，并根据角色尺寸比例缩放）
+    // 玩家尺寸2.0米为基准，其他角色按比例缩放
+    const sizeRatio = this.owner.radius / 1.0; // 1.0是玩家半径的一半
+    const baseWidth = 1.2 * sizeRatio; // 米
+    const baseHeight = 1.2 * sizeRatio; // 米
     const screenWidth = camera.worldToScreenDistance(baseWidth * this.currentScale);
     const screenHeight = camera.worldToScreenDistance(baseHeight * this.currentScale);
     

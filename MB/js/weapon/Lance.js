@@ -299,9 +299,11 @@ class Lance extends Weapon {
     
     const screenPos = camera.worldToScreen(worldPos);
     
-    // 计算渲染尺寸
-    const baseWidth = 1.5; // 骑枪较长
-    const baseHeight = 1.5;
+    // 计算渲染尺寸（根据角色尺寸比例缩放）
+    // 玩家尺寸2.0米为基准，其他角色按比例缩放
+    const sizeRatio = this.owner.radius / 1.0; // 1.0是玩家半径的一半
+    const baseWidth = 1.5 * sizeRatio; // 骑枪较长
+    const baseHeight = 1.5 * sizeRatio;
     const screenWidth = camera.worldToScreenDistance(baseWidth * this.currentScale);
     const screenHeight = camera.worldToScreenDistance(baseHeight * this.currentScale);
     
