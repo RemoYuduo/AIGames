@@ -19,10 +19,11 @@
   },
   "lance": {
     "damage": 150,
-    "knockback": 5,
+    "knockback": 8,
     "cooldown": 1.0,
     "speedThreshold": 0.7,
     "maxTargets": 5,
+    "selfSlowdown": 0.6,
     "imagePath": "res/lance.png"
   }
 }

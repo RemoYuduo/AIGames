@@ -118,10 +118,22 @@ MB/
 - `render(context, camera)`: 渲染实体
 
 **Character 接口** (继承 Entity):
-- `takeDamage(damage, knockback)`: 受到伤害
+- `takeDamage(damage, knockback)`: 受到伤害和击退
 - `die()`: 死亡处理
 - `move(acceleration)`: 施加移动加速度
 - `attack()`: 触发攻击
+
+**死亡机制**:
+- 角色死亡后进入1.5秒的死亡过程
+- 死亡过程中失去碰撞（collider.enabled = false）
+- 死亡过程中失去摩擦力（friction = 1.0，不衰减速度）
+- 保持物理更新，形成自然的击飞效果
+- 死亡时根据击退方向产生旋转效果：
+  - 击退向量y分量为正（向上击飞）→逆时针旋转
+  - 击退向量y分量为负（向下击飞）→顺时针旋转
+  - 旋转速度基于击退力度：(knockbackSpeed + 2.5) 弧度/秒
+- 渲染时逐渐透明（线性淡出）
+- 死亡计时结束后彻底移除（active = false）
 
 ### 7. 物理系统 (PhysicsSystem)
 **职责**: 处理速度、加速度、惯性
@@ -189,6 +201,17 @@ MB/
 
 **Weapon 基类接口**:
 - `update(deltaTime, owner)`: 更新武器状态
+- `render(context, camera)`: 渲染武器
+- `attack()`: 触发攻击
+
+**骑枪（Lance）特性**:
+- 仅在骑乘时可用
+- 状态机：idle（竖直）→ ready（接近最大速度）→ charging（冲刺）→ cooldown（冷却）
+- 击中效果：
+  - 对敌人：造成150伤害 + 8点击退力（较大击退，向冲刺方向+向上）
+  - 对自己：速度降至20%（强力减速），同时清除加速度，模拟冲撞的强烈反作用力
+- 冲刺结束条件：速度降低到70%以下 或 击中目标后0.3秒 或 达到最大目标数（5个）
+- 击中后速度骤降，几乎必然导致冲刺状态立即结束
 - `render(context, camera)`: 渲染武器
 - `attack(target)`: 触发攻击
 - `canAttack()`: 是否可以攻击（冷却检查）

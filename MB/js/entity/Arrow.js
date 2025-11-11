@@ -98,14 +98,12 @@ class Arrow extends Entity {
     this.hasHit = true;
     this.active = false;
     
-    // 造成伤害
-    if (target.takeDamage) {
-      target.takeDamage(this.damage);
-    }
+    // 计算击退向量
+    const knockbackVec = Vector2.multiply(this.direction, this.knockback);
     
-    // 击退效果
-    if (target.physics) {
-      target.physics.applyImpulse(this.direction, this.knockback);
+    // 造成伤害（传递击退向量）
+    if (target.takeDamage) {
+      target.takeDamage(this.damage, knockbackVec);
     }
   }
   

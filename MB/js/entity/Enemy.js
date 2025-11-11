@@ -37,6 +37,14 @@ class Enemy extends Entity {
     this.health = config.health || 100;
     this.maxHealth = this.health;
     this.alive = true;
+    
+    // 死亡状态
+    this.dying = false; // 是否正在死亡
+    this.deathTimer = 0; // 死亡计时器
+    this.deathDuration = 1.5; // 死亡持续时间（秒）
+    this.deathOpacity = 1.0; // 死亡时的透明度
+    this.deathRotation = 0; // 死亡时的旋转角度
+    this.deathRotationSpeed = 0; // 死亡旋转速度
   }
 
   // 移动
@@ -55,22 +63,81 @@ class Enemy extends Entity {
   }
 
   // 受到伤害
-  takeDamage(damage) {
+  takeDamage(damage, knockback) {
+    // 如果已经在死亡过程中，不再受到伤害
+    if (this.dying) return;
+    
     this.health -= damage;
+    
+    // 应用击退
+    if (knockback && this.physics) {
+      this.physics.applyImpulse(knockback);
+    }
+    
     if (this.health <= 0) {
       this.health = 0;
-      this.die();
+      this.die(knockback); // 传递击退向量到死亡方法
     }
   }
 
   // 死亡
-  die() {
+  die(knockback) {
+    if (this.dying) return; // 防止重复触发
+    
+    this.dying = true;
     this.alive = false;
-    this.active = false;
+    this.deathTimer = 0;
+    this.deathRotation = 0;
+    
+    // 根据击退方向设置旋转方向和速度（降低一半）
+    if (knockback && knockback.length() > 0) {
+      const knockbackSpeed = knockback.length();
+      // 计算击退向量与x轴的叉积，判断是顺时针还是逆时针
+      // 如果击退向量的y分量为正（向上击飞），则逆时针旋转；否则顺时针旋转
+      const rotationSign = knockback.y > 0 ? 1 : -1;
+      this.deathRotationSpeed = (knockbackSpeed + 2.5) * rotationSign;
+    } else {
+      // 没有击退向量时，使用当前速度决定旋转
+      const speed = this.physics.velocity.length();
+      this.deathRotationSpeed = (speed + 2.5) * (Math.random() > 0.5 ? 1 : -1);
+    }
+    
+    // 禁用碰撞器（不再与其他实体碰撞）
+    if (this.collider) {
+      this.collider.enabled = false;
+    }
+    
+    // 保存死亡时的摩擦力，然后移除摩擦力
+    if (this.physics) {
+      this.physics.originalFriction = this.physics.friction;
+      this.physics.friction = 1.0; // 摩擦力设为1.0，意味着不衰减速度
+    }
   }
 
   // 更新
   update(deltaTime) {
+    // 如果正在死亡过程中
+    if (this.dying) {
+      this.deathTimer += deltaTime;
+      
+      // 计算透明度（线性淡出）
+      this.deathOpacity = 1.0 - (this.deathTimer / this.deathDuration);
+      
+      // 更新死亡旋转角度
+      this.deathRotation += this.deathRotationSpeed * deltaTime;
+      
+      // 死亡过程中仍然更新物理（保持被击飞的效果）
+      const velocity = this.physics.update(deltaTime);
+      this.transform.translate(velocity.x * deltaTime, velocity.y * deltaTime);
+      
+      // 死亡时间结束，彻底移除
+      if (this.deathTimer >= this.deathDuration) {
+        this.active = false;
+      }
+      return;
+    }
+    
+    // 正常存活状态的更新
     if (!this.alive) return;
 
     // 更新物理
@@ -92,7 +159,8 @@ class Enemy extends Entity {
 
   // 渲染
   render(context, camera) {
-    if (!this.alive) return;
+    // 死亡过程中也要渲染（带透明度）
+    if (!this.alive && !this.dying) return;
 
     const screenPos = camera.worldToScreen(this.transform.position);
     const screenRadius = camera.worldToScreenDistance(this.radius);
@@ -113,9 +181,18 @@ class Enemy extends Entity {
     }
 
     context.save();
+    
+    // 如果正在死亡，应用透明度
+    if (this.dying) {
+      context.globalAlpha = this.deathOpacity;
+    }
+    
     context.translate(screenPos.x, screenPos.y);
     
-    if (this.leanAngle !== 0) {
+    // 死亡时应用旋转，否则应用倾斜
+    if (this.dying) {
+      context.rotate(this.deathRotation);
+    } else if (this.leanAngle !== 0) {
       context.rotate(this.leanAngle);
     }
 
@@ -175,8 +252,10 @@ class Enemy extends Entity {
 
     context.restore();
 
-    // 绘制生命值条
-    this.renderHealthBar(context, screenPos, screenRadius);
+    // 只在活着时绘制生命值条
+    if (!this.dying) {
+      this.renderHealthBar(context, screenPos, screenRadius);
+    }
 
     // 调试：绘制碰撞圆
     if (window.DEBUG) {

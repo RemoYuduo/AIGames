@@ -6,7 +6,8 @@ class Lance extends Weapon {
     // 骑枪属性
     this.speedThreshold = config.speedThreshold || 0.7; // 速度阈值（相对于最大速度）
     this.maxTargets = config.maxTargets || 5;
-    this.knockback = config.knockback || 5;
+    this.knockback = config.knockback || 8; // 增加击退力度
+    this.selfSlowdown = config.selfSlowdown || 0.6; // 击中后自身降速比例（0-1）
     
     // 骑枪状态
     this.state = 'idle'; // idle(竖直), ready(接近冲刺速度), charging(冲刺中), cooldown(冷却)
@@ -229,10 +230,21 @@ class Lance extends Weapon {
     const knockbackDir = new Vector2(facing, -0.5).normalize();
     const knockbackForce = knockbackDir.multiply(this.knockback);
     
-    // 造成伤害
+    // 对目标造成伤害和大击退
     target.takeDamage(this.damage, knockbackForce);
     
-    console.log(`骑枪冲刺击中目标！造成${this.damage}伤害`);
+    // 对自己施加强力减速（冲撞的反作用力）
+    if (this.owner.physics) {
+      // 速度降低到原来的20%（更明显的减速）
+      this.owner.physics.velocity.x *= 0.2;
+      this.owner.physics.velocity.y *= 0.2;
+      
+      // 清除加速度，防止玩家输入立即恢复速度
+      this.owner.physics.acceleration.x = 0;
+      this.owner.physics.acceleration.y = 0;
+      
+      console.log(`骑枪冲刺击中目标！造成${this.damage}伤害，击退力${this.knockback}，自身速度降至20%`);
+    }
     
     // 创建冲击特效（可选）
     this.createChargeEffect(targetPos);

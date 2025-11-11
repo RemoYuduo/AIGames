@@ -97,15 +97,15 @@ class CombatSystem {
 
   // 应用伤害
   applyDamage(hitbox, target) {
-    // 应用伤害
-    if (target.takeDamage) {
-      target.takeDamage(hitbox.damage);
+    // 计算击退向量
+    let knockbackVec = null;
+    if (hitbox.knockback > 0) {
+      knockbackVec = hitbox.knockbackDirection.clone().multiply(hitbox.knockback);
     }
     
-    // 应用击退
-    if (hitbox.knockback > 0 && target.physics) {
-      const knockbackVec = hitbox.knockbackDirection.clone().multiply(hitbox.knockback);
-      target.physics.applyImpulse(knockbackVec);
+    // 应用伤害（传递击退向量）
+    if (target.takeDamage) {
+      target.takeDamage(hitbox.damage, knockbackVec);
     }
     
     console.log(`${hitbox.owner.type} 攻击 ${target.type}，造成 ${hitbox.damage} 伤害`);
