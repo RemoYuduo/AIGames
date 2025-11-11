@@ -57,6 +57,11 @@ class Player extends Entity {
     this.deathOpacity = 1.0;
     this.deathRotation = 0;
     this.deathRotationSpeed = 0;
+    
+    // 受击闪红效果
+    this.hitFlashTimer = 0;
+    this.hitFlashDuration = 0.5; // 闪红持续0.5秒
+    this.isHitFlashing = false;
   }
   
   // 装备武器
@@ -70,6 +75,10 @@ class Player extends Entity {
     if (this.dying) return;
     
     this.health -= damage;
+    
+    // 启动闪红效果
+    this.isHitFlashing = true;
+    this.hitFlashTimer = 0;
     
     // 应用击退
     if (knockback && this.physics) {
@@ -194,6 +203,15 @@ class Player extends Entity {
       return;
     }
     
+    // 更新闪红效果计时器
+    if (this.isHitFlashing) {
+      this.hitFlashTimer += deltaTime;
+      if (this.hitFlashTimer >= this.hitFlashDuration) {
+        this.isHitFlashing = false;
+        this.hitFlashTimer = 0;
+      }
+    }
+    
     // 正常更新物理
     const velocity = this.physics.update(deltaTime);
     this.transform.translate(velocity.x * deltaTime, velocity.y * deltaTime);
@@ -267,7 +285,20 @@ class Player extends Entity {
     }
 
     // 绘制身体（椭圆形，表现挤压拉伸）
-    context.fillStyle = this.bodyColor;
+    // 如果正在闪红，使用红色调的颜色
+    if (this.isHitFlashing) {
+      // 使用闪烁效果，快速切换红色
+      const flashInterval = 0.1; // 每0.1秒闪烁一次
+      const flashPhase = Math.floor(this.hitFlashTimer / flashInterval) % 2;
+      if (flashPhase === 0) {
+        context.fillStyle = '#ff8080'; // 浅红色
+      } else {
+        context.fillStyle = this.bodyColor;
+      }
+    } else {
+      context.fillStyle = this.bodyColor;
+    }
+    
     context.beginPath();
     context.ellipse(
       0, 
@@ -289,7 +320,20 @@ class Player extends Entity {
     const headX = this.facingDirection * screenRadius * 0.15;
     const headY = -screenRadius * 0.6 + headBobOffset;
     
-    context.fillStyle = this.headColor;
+    // 如果正在闪红，头部也使用红色调
+    if (this.isHitFlashing) {
+      // 使用闪烁效果，快速切换红色
+      const flashInterval = 0.1; // 每0.1秒闪烁一次
+      const flashPhase = Math.floor(this.hitFlashTimer / flashInterval) % 2;
+      if (flashPhase === 0) {
+        context.fillStyle = '#ff8080'; // 浅红色
+      } else {
+        context.fillStyle = this.headColor;
+      }
+    } else {
+      context.fillStyle = this.headColor;
+    }
+    
     context.beginPath();
     context.arc(
       headX, 
