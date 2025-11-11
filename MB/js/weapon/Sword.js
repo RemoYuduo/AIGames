@@ -3,6 +3,9 @@ class Sword extends Weapon {
   constructor(config, owner) {
     super(config, owner);
     
+    // 武器类型标识
+    this.type = 'sword';
+    
     // 剑的攻击时序（总共2秒一个周期）
     this.raiseTime = 0.2;      // 举起剑
     this.slashTime = 0.1;      // 加速劈下

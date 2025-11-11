@@ -23,9 +23,11 @@ class AI {
     this.chargeTimer = 0;
     this.chargeCooldown = config.chargeCooldown || 3;
     this.isCharging = false;
-    this.chargePhase = 'APPROACH'; // APPROACH(接近), RETREAT(后退), COOLDOWN(冷却)
-    this.retreatDistance = config.retreatDistance || 15; // 后退距离
+    this.chargePhase = 'APPROACH'; // APPROACH(接近冲锋), CONTINUE(穿透前进), COOLDOWN(冷却调整)
+    this.retreatDistance = config.retreatDistance || 15; // 穿透后的距离阈值
     this.chargeStartPos = null; // 记录开始冲锋的位置
+    this.wasLanceCharging = false; // 上一帧骑枪是否在冲刺
+    this.continueTimer = 0; // 穿透阶段计时器
   }
   
   // 查找目标
@@ -175,7 +177,6 @@ class AI {
     const ownerPos = owner.transform.position;
     const targetPos = this.target.transform.position;
     const distance = ownerPos.distance(targetPos);
-    const idealRetreatDistance = this.retreatDistance;
     
     // 更新冲锋冷却
     if (this.chargeTimer > 0) {
@@ -183,83 +184,86 @@ class AI {
       if (this.chargeTimer <= 0) {
         // 冷却结束，重新开始接近
         this.chargePhase = 'APPROACH';
+        this.chargeStartPos = null;
+        console.log('骑兵冷却完成，开始新一轮冲锋');
       }
     }
     
     // 检查骑枪是否在冲刺状态
     const lance = owner.weapons && owner.weapons.find(w => w.type === 'lance');
     const isLanceCharging = lance && lance.state === 'charging';
+    const wasCharging = this.wasLanceCharging;
+    this.wasLanceCharging = isLanceCharging;
     
     // 根据当前阶段执行不同行为
     switch (this.chargePhase) {
       case 'APPROACH':
-        // 接近阶段：向目标冲锋
+        // 接近阶段：全速向目标冲锋
         this.state = 'CHARGE_APPROACH';
         
-        // 检测冲锋完成：距离很近或者穿过了目标
-        if (distance < 3 || isLanceCharging) {
-          // 记录冲锋开始（用于判断冲锋结束）
-          if (!this.chargeStartPos) {
-            this.chargeStartPos = true;
-          }
-          
-          // 如果骑枪冲刺刚结束，立即切换到后退
-          if (this.chargeStartPos && !isLanceCharging && lance && lance.state !== 'charging') {
-            this.chargePhase = 'RETREAT';
-            this.chargeStartPos = null;
-            console.log('骑兵冲锋完成，开始后退');
-          }
-        }
-        
-        // 继续向目标移动
+        // 持续向目标移动，加速到最大速度触发骑枪冲刺
         const approachDir = Vector2.sub(targetPos, ownerPos).normalize();
         owner.move(approachDir);
+        
+        // 检测冲锋触发：骑枪刚开始冲刺
+        if (isLanceCharging && !wasCharging) {
+          this.chargeStartPos = ownerPos.clone();
+          console.log('骑兵触发骑枪冲刺！');
+        }
+        
+        // 检测冲锋完成：骑枪冲刺结束
+        if (this.chargeStartPos && wasCharging && !isLanceCharging) {
+          // 冲刺结束，立即切换到穿透阶段
+          this.chargePhase = 'CONTINUE';
+          this.continueTimer = 3.0; // 继续前进3秒，穿过敌阵（增加穿透时间）
+          console.log('骑枪冲刺完成，继续向前穿透');
+        }
         break;
         
-      case 'RETREAT':
-        // 后退阶段：远离目标一段距离后再次冲锋
-        this.state = 'CHARGE_RETREAT';
+      case 'CONTINUE':
+        // 穿透阶段：保持方向继续前进，穿过目标
+        this.state = 'CHARGE_CONTINUE';
+        this.continueTimer -= deltaTime;
         
-        if (distance < idealRetreatDistance) {
-          // 还没退够距离，继续后退
-          const retreatDir = Vector2.sub(ownerPos, targetPos).normalize();
-          owner.move(retreatDir);
+        if (this.continueTimer > 0) {
+          // 保持当前朝向继续前进（不转向目标）
+          const continueDir = new Vector2(owner.facingDirection, 0);
+          owner.move(continueDir);
         } else {
-          // 已经退到足够远，进入冷却阶段
+          // 穿透完成，进入冷却并准备下一轮
           this.chargePhase = 'COOLDOWN';
           this.chargeTimer = this.chargeCooldown;
-          console.log('骑兵后退完成，开始冷却');
+          this.chargeStartPos = null;
+          console.log('骑兵穿透完成，进入冷却等待下次冲锋');
         }
         break;
         
       case 'COOLDOWN':
-        // 冷却阶段：等待冷却结束
+        // 冷却阶段：调整位置，准备下一次冲锋
         this.state = 'CHARGE_COOLDOWN';
         
-        // 保持距离，轻微调整位置
-        if (distance < idealRetreatDistance * 0.7) {
-          // 太近了，继续后退一点
-          const retreatDir = Vector2.sub(ownerPos, targetPos).normalize();
-          owner.move(retreatDir);
-        } else if (distance > idealRetreatDistance * 1.3) {
-          // 太远了，靠近一点
-          const approachDir = Vector2.sub(targetPos, ownerPos).normalize();
-          owner.move(approachDir);
+        // 更宽松的远离判定：距离超过10米即可开始转向
+        const minRetreatDistance = 10; // 降低远离距离要求
+        
+        if (distance > minRetreatDistance) {
+          // 已经够远了，开始缓慢转向目标方向
+          const toTargetDir = Vector2.sub(targetPos, ownerPos).normalize();
+          
+          // 缓慢移动，不要加速太快（等待冷却）
+          owner.move(toTargetDir.multiply(0.4));
+          
+          // 更新朝向
+          if (targetPos.x !== ownerPos.x) {
+            owner.facingDirection = targetPos.x > ownerPos.x ? 1 : -1;
+          }
         } else {
-          // 距离合适，停止移动等待冷却
-          owner.isMoving = false;
+          // 还不够远，继续向当前方向移动
+          const continueDir = new Vector2(owner.facingDirection, 0);
+          owner.move(continueDir.multiply(0.5));
         }
         
         // 冷却结束后自动切换到 APPROACH（在上面的 chargeTimer 更新中）
-        if (this.chargeTimer <= 0) {
-          console.log('骑兵冷却完成，准备再次冲锋');
-        }
         break;
-    }
-    
-    // 更新朝向
-    if (targetPos.x !== ownerPos.x) {
-      owner.facingDirection = targetPos.x > ownerPos.x ? 1 : -1;
     }
   }
 }

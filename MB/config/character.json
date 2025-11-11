@@ -16,7 +16,7 @@
   "cavalry": {
     "size": 1.5,
     "maxSpeed": 10,
-    "acceleration": 12,
+    "acceleration": 8,
     "mass": 150,
     "health": 100
   },

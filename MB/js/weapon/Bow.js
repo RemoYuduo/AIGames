@@ -3,6 +3,9 @@ class Bow extends Weapon {
   constructor(config, owner) {
     super(config, owner);
     
+    // 武器类型标识
+    this.type = 'bow';
+    
     // 弓的属性
     this.arrowSpeed = config.arrowSpeed || 15;
     this.range = config.range || 20;

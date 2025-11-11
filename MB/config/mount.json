@@ -1,7 +1,7 @@
 {
   "defaultHorse": {
     "maxSpeed": 12.96,
-    "acceleration": 45,
+    "acceleration": 30,
     "friction": 0.88,
     "imagePath": "res/horseHead.png",
     "offsetX": 0.4,

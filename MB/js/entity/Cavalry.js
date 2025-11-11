@@ -22,7 +22,7 @@ class Cavalry extends Enemy {
       attackRange: 2.5,
       chaseDistance: 40,
       chargeCooldown: 3,
-      retreatDistance: 15  // 后退距离，冲锋后退到距离目标15米的位置
+      retreatDistance: 10  // 后退距离参数（实际代码中会使用更宽松的判定）
     }));
   }
   

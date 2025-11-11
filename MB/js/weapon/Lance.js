@@ -3,6 +3,9 @@ class Lance extends Weapon {
   constructor(config, owner) {
     super(config, owner);
     
+    // 武器类型标识
+    this.type = 'lance';
+    
     // 骑枪属性
     this.speedThreshold = config.speedThreshold || 0.7; // 速度阈值（相对于最大速度）
     this.maxTargets = config.maxTargets || 5;
