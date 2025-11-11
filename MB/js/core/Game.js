@@ -79,6 +79,11 @@ class Game {
     const bowConfig = this.config.get('weapon.bow');
     const bow = new Bow(bowConfig, this.player);
     this.player.equipWeapon(bow);
+    
+    // 给玩家装备骑枪
+    const lanceConfig = this.config.get('weapon.lance');
+    const lance = new Lance(lanceConfig, this.player);
+    this.player.equipWeapon(lance);
 
     // 摄像机跟随玩家
     this.camera.follow(this.player);
